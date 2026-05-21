@@ -1,0 +1,400 @@
+# Hermes-Lite Configuration Profile
+# Optimized for Jetson Orin Nano 8GB cyberdeck with offline-first operation
+# See REDESIGN.md §5.1 for full specification
+
+_config_version: 1
+
+# ============================================================================
+# Model and Provider Configuration (§3.1, §12.1)
+# ============================================================================
+model:
+  default: "ollama:ministral-3:3b"
+  escalation_chain:
+    - ollama                 # Local 3B model on Jetson
+    - partner_ollama         # Partner 3B model on blue-swallow-society VM (when deployed)
+    - copilot                # GitHub Copilot (if local VS Code present, see §12.6)
+    - openai                 # OpenAI (remote escalation)
+    - anthropic              # Claude (final escalation)
+
+# ============================================================================
+# Agent Loop Configuration
+# ============================================================================
+agent:
+  max_iterations: 25
+  reasoning_config:
+    enabled: false           # Disabled for 3B models
+  enable_prompt_caching: true
+  cache_budget_fraction: 0.5
+
+# Tool Surface and Kit Configuration (§5.6, §12.1)
+tool_surface:
+  mode: kit-based           # Only active kit is available to the model
+  max_tools_per_kit: 5
+  cache_stable_schemas: true
+  per_kit_failure_budget: 3  # Consecutive tool-call failures before escalation
+
+iteration_budget:
+  model: "iteration-and-token"
+  check_interval_ms: 500
+
+# ============================================================================
+# Gateway Configuration (§3.3, §5.3)
+# ============================================================================
+enabled_gateways: [discord, openwebui, tui]
+
+gateway:
+  discord:
+    enabled: true
+    bot_name: "Hermes-Lite"
+    allowed_channels: []       # Operator must populate via /setup
+    allowed_users: []          # Operator must populate via /setup
+    ratelimit:
+      per_user_per_minute: 2
+  
+  openwebui:
+    enabled: true
+    pinned_version: "v0.6.x"   # From gateway/platforms/openwebui/pinned-version.json (§12.3)
+    allowed_users: []          # Populated by setup wizard
+  
+  tui:
+    enabled: true
+    default: true
+
+# ============================================================================
+# Session and Persistence (§4.2, §5.1)
+# ============================================================================
+session:
+  # Per-session JSON snapshots default to enabled (§5.1)
+  json_snapshots:
+    enabled: true
+    retention_days: 90
+  
+  # State database settings
+  state_db:
+    path: "~/.hermes-lite/state.db"
+    fts5_enabled: true
+    trim_policy:
+      days_full_resolution: 90
+      summarize_older: true
+    archive_cadence: quarterly   # §12.7
+
+# Curator and Background Review - Deferred Queue Mode (§12.2)
+curator:
+  mode: deferred             # Never inline; enqueue to queue/*.jsonl
+  threshold:
+    entries: 25              # Flush when queue reaches 25 entries
+    hours: 4                 # Or after 4 hours of accumulated work
+  gateway_notify: true       # Alert user when threshold is reached
+  approval_required: true    # Every proposed change requires explicit approval
+
+background_review:
+  mode: deferred
+  enabled: true
+
+# ============================================================================
+# Memory and Recall (§5.7, §12.7)
+# ============================================================================
+memory:
+  provider: honcho           # Dialectic user modeling (§12.7)
+  trim:
+    days_full_resolution: 90
+    summarize_older: true
+  trajectory:
+    archive_cadence: quarterly # See §12.7
+
+# Memory profiles per workflow (§5.7)
+memory_profiles:
+  research:
+    kit: arxiv
+    backed_by: "~/repos/knowledge"
+  spec:
+    kit: spec-kit
+  dev:
+    kit: [spec-kit, web-ops, security]
+  web:
+    kit: web-ops
+  azure:
+    kit: azure-ops
+  infra:
+    kit: [azure-ops, dev, security]
+  api:
+    kit: [dev, web-ops, security]
+  security:
+    kit: security
+    write_access: security_kit_only
+
+# ============================================================================
+# Compression and Context Management
+# ============================================================================
+compression:
+  enabled: true
+  method: gpt-3.5-turbo
+  checkpoint_every_turns: 10
+  target_compression_ratio: 0.5
+
+context:
+  max_tokens: 8192
+  system_prompt_profile: small-models  # §5.5
+
+# ============================================================================
+# Skill Configuration
+# ============================================================================
+skills:
+  # Retained skill domains (§4.3)
+  enabled_domains:
+    - research
+    - data-science
+    - software-development
+    - devops
+    - github
+    - mcp
+    - domain
+    - note-taking
+    - productivity
+    - index-cache
+    - autonomous-ai-agents
+    - dogfood
+    - security
+  
+  # New skill bundles added by hermes-lite (§5.4, §5.10-5.12)
+  new_bundles:
+    arxiv:
+      enabled: true
+      rate_limit:
+        requests_per_second: 0.33  # 1 req per 3 seconds (§5.4, §12.5)
+        daily_cap: 1000
+      user_agent: "hermes-lite-arxiv-research"
+    
+    spec_kit:
+      enabled: true
+      bundle_path: "skills/development/spec-kit"
+    
+    azure_ops:
+      enabled: true
+      kit_name: azure-ops
+    
+    web_frontend:
+      enabled: true
+      stack: astro              # Options: astro, next, sveltekit, static-html
+    
+    linux_vm_api:
+      enabled: true
+      kit_name: linux-vm-api
+    
+    networking:
+      enabled: true
+      tailscale_enabled: true
+    
+    red_team:
+      enabled: true
+      kit_name: security
+  
+  # Explicitly disabled skill domains (§6)
+  disabled_domains:
+    - apple
+    - gaming
+    - gifs
+    - social-media
+    - smart-home
+    - creative
+    - voice
+    - tts
+
+# ============================================================================
+# Tools Configuration (§9, §9.5)
+# ============================================================================
+tools:
+  # LocalRepoWorkspace plugin (§5.9)
+  workspace:
+    enabled: true
+    registry_path: "~/.hermes-lite/workspaces.yaml"
+    journal_path: "~/.hermes-lite/journal"
+    branch_hygiene: strict        # Never allow direct main/master writes
+    change_budgets:
+      default:
+        files: 5
+        lines: 100
+      aggressive:
+        files: 20
+        lines: 500
+    approval_mode_default: pr-only  # Options: auto, confirm, pr-only, read-only
+
+# ============================================================================
+# arXiv Research Configuration (§5.4, §12.5)
+# ============================================================================
+arxiv:
+  rate_limit:
+    requests_per_second: 0.33
+    daily_cap: 1000
+    jitter_enabled: true
+  user_agent: "hermes-lite-arxiv (contact: user@domain)"
+  cache:
+    enabled: true
+    expiry_days: 365
+
+corpora:
+  wikipedia:
+    enabled: true
+    path: "~/.hermes-lite/corpora/wikipedia"
+    index_enabled: true
+    dump_mirror_url: ""  # Populated by setup wizard
+
+# ============================================================================
+# Terminal and Execution Environment
+# ============================================================================
+terminal:
+  cwd: "~"
+  backend: local              # Options: local, docker, ssh (others removed)
+  timeout_seconds: 300
+
+# ============================================================================
+# Diagnostics and Logging (§5.14)
+# ============================================================================
+diagnostics:
+  enabled: true
+  path: "~/.hermes-lite/logs"
+  
+  streams:
+    agent:
+      enabled: true
+      retention_days: 90
+    tools:
+      enabled: true
+      retention_days: 90
+    providers:
+      enabled: true
+      retention_days: 90
+    workspace:
+      enabled: true
+      retention_days: 90
+    security:
+      enabled: true
+      retention_days: 365       # Longer retention for security logs
+      mode: "0600"              # Read-only to owner
+    thermal:
+      enabled: true
+      retention_days: 90
+    api:
+      enabled: true
+      retention_days: 90
+  
+  redact_rules:
+    - pattern: "^(sk-|gsk_|ghp_|ts-)"  # API keys, tokens, etc.
+      redact: true
+    - pattern: "^(HERMES_|OPENAI_|ANTHROPIC_)"  # Env var names
+      redact: true
+
+  export:
+    enabled: true
+    knowledge_repo_path: "~/repos/knowledge/diagnostics"
+
+# ============================================================================
+# Thermal Management (Jetson-specific, §12.8)
+# ============================================================================
+thermal:
+  enabled: true
+  monitoring_interval_seconds: 5
+  default_power_mode: 1          # 25W (nvpmodel -m 1)
+  burst_power_mode: 0            # MAXN (nvpmodel -m 0)
+  burst_max_minutes: 20
+  idle_power_mode: 2             # 7W (nvpmodel -m 2)
+  idle_threshold_minutes: 5
+  
+  thresholds:
+    cpu_ceiling_c: 80
+    gpu_ceiling_c: 85
+    throttle_warning_c: 75
+
+# ============================================================================
+# Display and UI (TUI, Discord, Open WebUI)
+# ============================================================================
+display:
+  theme: default                 # Options: default, ares, mono, slate
+  spinner_enabled: true
+  response_box_enabled: true
+  markdown_tables: true
+  background_process_notifications: result  # all | result | error | off
+
+# ============================================================================
+# Security and Approval (§9.4, §9.5)
+# ============================================================================
+security:
+  scope_file: "~/.hermes-lite/security-scope.yaml"
+  workspace_approval_mode_default: pr-only
+  sensitive_tools_require_approval: true
+  egress_allowlist_enabled: true
+
+redaction:
+  enabled: true
+  rules:
+    - name: api_keys
+      patterns:
+        - "sk-[A-Za-z0-9]{48}"   # OpenAI keys
+        - "ghp_[A-Za-z0-9]{36}"  # GitHub PAT
+        - "ts-[A-Za-z0-9]{32}"   # Tailscale
+    - name: credentials
+      patterns:
+        - "password[\"'\\s]*[:=]"
+        - "secret[\"'\\s]*[:=]"
+
+# ============================================================================
+# Rebase and Upstream Sync (§12.4)
+# ============================================================================
+rebase:
+  enabled: true
+  cadence: weekly               # Default: weekly
+  allow_auto: false             # Manual approval required
+  removal_manifest: "lite-removed.manifest.yaml"
+  log_path: "~/.hermes-lite/rebase-log.jsonl"
+
+# ============================================================================
+# Cron and Scheduling
+# ============================================================================
+cron:
+  enabled: true
+  skip_memory: true              # Cron sessions don't access memory (§10)
+  session_timeout_minutes: 3     # Hard interrupt at 3 minutes
+
+# ============================================================================
+# Providers Configuration (§3.1)
+# ============================================================================
+providers:
+  ollama:
+    base_url: "http://127.0.0.1:11434"
+    enabled: true
+    timeout: 120
+  
+  partner_ollama:
+    base_url: "http://127.0.0.1:11435"  # Partner model on blue-swallow-society VM (when deployed)
+    enabled: false                       # Enable after VM is up
+    timeout: 120
+  
+  openai:
+    enabled: true
+    require_api_key: true
+    models:
+      - gpt-4o
+      - gpt-4o-mini
+  
+  copilot:
+    enabled: true
+    require_editor: true
+    acp_socket_path: "/tmp/hermes-copilot.sock"
+    silent_skip_when_absent: true  # §12.6
+  
+  anthropic:
+    enabled: true
+    require_api_key: true
+    models:
+      - claude-opus
+      - claude-sonnet
+      - claude-haiku
+
+# ============================================================================
+# Windows, Termux, and Platform-Specific (REMOVED)
+# ============================================================================
+# The following sections from upstream are INTENTIONALLY REMOVED:
+# - [termux] extras
+# - Windows-specific paths (MinGit, UTF-8 shim)
+# - macOS-specific skills
+# This is aarch64 Linux only (JetPack 6.x on Jetson Orin Nano)

@@ -1,0 +1,228 @@
+# Hermes-Lite Removal Manifest
+# Documents all components removed from upstream Hermes
+# Used by cron/rebase-upstream.sh to prevent re-introduction of removed surface (§12.4)
+# Last updated: Phase 1 Subtraction pass
+
+version: 1
+
+# ============================================================================
+# Agent Adapters and Providers (§3.2)
+# ============================================================================
+removed_agent_modules:
+  azure_integrations:
+    - "agent/azure_identity_adapter.py"  # Azure Foundry / Entra ID adapter
+  
+  cloud_providers:
+    - "agent/bedrock_adapter.py"         # AWS Bedrock
+  
+  google:
+    - "agent/gemini_native_adapter.py"   # Google Gemini native
+    - "agent/gemini_cloudcode_adapter.py" # Google Cloud Code
+    - "agent/gemini_schema.py"           # Gemini schema definitions
+    - "agent/google_code_assist.py"      # Google Code Assist
+    - "agent/google_oauth.py"            # Google OAuth
+  
+  openai_variants:
+    - "agent/codex_runtime.py"           # OpenAI Codex runtime
+    - "agent/codex_responses_adapter.py" # Codex responses adapter
+  
+  other_llm:
+    - "agent/moonshot_schema.py"         # Moonshot/Kimi schema
+  
+  model_management:
+    - "agent/auxiliary_client.py"        # Auxiliary client (replaced with single-provider helper)
+    - "agent/models_dev.py"              # Model picker development
+    - "agent/portal_tags.py"             # Nous Portal model picker
+
+media_generation:
+  image:
+    - "agent/image_gen_provider.py"      # Image generation provider
+    - "agent/image_gen_registry.py"      # Image generation registry
+    - "agent/image_routing.py"           # Image routing logic
+  
+  video:
+    - "agent/video_gen_provider.py"      # Video generation provider
+    - "agent/video_gen_registry.py"      # Video generation registry
+
+# ============================================================================
+# Gateway Platforms (§3.4)
+# ============================================================================
+removed_gateway_platforms:
+  messaging:
+    - "gateway/platforms/telegram.py"
+    - "gateway/platforms/telegram_network.py"
+    - "gateway/platforms/slack.py"
+    - "gateway/platforms/whatsapp.py"
+    - "gateway/platforms/signal.py"
+    - "gateway/platforms/signal_rate_limit.py"
+    - "gateway/platforms/email.py"
+  
+  chinese:
+    - "gateway/platforms/yuanbao.py"
+    - "gateway/platforms/yuanbao_media.py"
+    - "gateway/platforms/yuanbao_proto.py"
+    - "gateway/platforms/yuanbao_sticker.py"
+    - "gateway/platforms/weixin.py"
+    - "gateway/platforms/dingtalk.py"
+    - "gateway/platforms/wecom.py"
+    - "gateway/platforms/wecom_callback.py"
+    - "gateway/platforms/wecom_crypto.py"
+  
+  other:
+    - "gateway/platforms/feishu.py"
+    - "gateway/platforms/feishu_comment.py"
+    - "gateway/platforms/feishu_comment_rules.py"
+    - "gateway/platforms/mattermost.py"
+    - "gateway/platforms/matrix.py"
+    - "gateway/platforms/qqbot/"  # Entire directory
+
+web_dashboards:
+  - "web/"                               # Bundled web dashboard
+  - "website/"                            # Docusaurus website
+  - "gateway/platforms/api_server.py"    # (depends on web/)
+  - "plugins/web/"                        # Web plugins
+
+# ============================================================================
+# Plugins (§3.4, §6)
+# ============================================================================
+removed_plugins:
+  media:
+    - "plugins/image_gen/"
+    - "plugins/video_gen/"
+  
+  entertainment:
+    - "plugins/spotify/"
+    - "plugins/google_meet/"
+    - "plugins/teams_pipeline/"
+    - "plugins/hermes-achievements/"
+  
+  dashboards:
+    - "plugins/example-dashboard/"
+    - "plugins/hermes-dashboard/"
+
+# ============================================================================
+# Skills (§4.3, §6)
+# ============================================================================
+removed_skill_domains:
+  platform_specific:
+    - "skills/apple/"
+    - "skills/gaming/"
+    - "skills/gifs/"
+    - "skills/social-media/"
+    - "skills/smart-home/"
+    - "skills/creative/"
+  
+  media:
+    - "skills/voice/"
+    - "skills/tts/"
+    - "skills/audio/"
+
+# ============================================================================
+# Packaging and Build Artifacts (§6)
+# ============================================================================
+removed_packaging:
+  installers:
+    - "setup-hermes.sh"                  # Replaced by scripts/install.sh
+  
+  packaging_formats:
+    - "Homebrew/"                        # macOS package manager
+    - "packaging/nix/"                   # Nix flake
+    - "constraints-termux.txt"           # Termux constraints
+    - "packaging/termux/"                # Termux packaging
+  
+  documentation:
+    - "setup-hermes.sh"
+    - "README.zh-CN.md"                  # (kept for reference but not in lite docs)
+
+platform_specific:
+  windows:
+    - "All Windows subprocess console hiding code"
+    - "MinGit bootstrap paths"
+    - "UTF-8 stdio shim"
+    - "Windows-only .gitignore entries"
+  
+  macos:
+    - "macOS-specific code paths"
+    - "osascript integration"
+  
+  termux:
+    - "Termux-specific terminal backends"
+    - "Termux environment setup"
+
+# ============================================================================
+# Build System and CI Modifications
+# ============================================================================
+removed_ci_targets:
+  - "Test targets for removed providers"
+  - "Test targets for removed gateways"
+  - "macOS CI runners"
+  - "Windows CI runners"
+  - "Termux builds"
+
+# ============================================================================
+# Retained Components
+# This list is for reference - components that must NEVER be removed
+# ============================================================================
+retained_critical:
+  agent_core:
+    - "agent/conversation_loop.py"
+    - "agent/prompt_builder.py"
+    - "agent/system_prompt.py"
+    - "agent/prompt_caching.py"
+    - "agent/tool_executor.py"
+    - "agent/tool_guardrails.py"
+    - "agent/error_classifier.py"
+  
+  persistence:
+    - "hermes_state.py"
+    - "state.db and FTS5 indexes"
+    - "Trajectory capture"
+  
+  memory_and_recall:
+    - "agent/curator.py"
+    - "agent/background_review.py"
+    - "agent/memory_manager.py"
+    - "plugins/memory/"
+  
+  gateways:
+    - "gateway/platforms/discord.py"
+    - "tui_gateway/"
+    - "ui-tui/"
+    - "gateway/session.py"
+  
+  skills:
+    - "skills/research/"
+    - "skills/software-development/"
+    - "skills/devops/"
+    - "skills/github/"
+    - "skills/mcp/"
+    - "skills/security/"
+  
+  providers:
+    - "agent/anthropic_adapter.py"
+    - "agent/copilot_acp_client.py"
+    - "agent/chat_completion_helpers.py"
+
+# ============================================================================
+# Rebase Strategy
+# ============================================================================
+rebase_rules:
+  conflict_resolution:
+    - "If a conflict re-introduces a removed path, DROP the incoming change"
+    - "Log dropped paths to rebase-conflict-report.txt"
+    - "Surface as informational, not as merge failure"
+  
+  merge_strategy:
+    - "Accept all updates to retained components"
+    - "Auto-drop all changes touching removed paths"
+    - "Preserve version numbers and schema changes in retained components"
+
+# ============================================================================
+# Integration Points That Must Verify After Rebase
+# ============================================================================
+integration_verification:
+  - "No import of removed agent adapters"
+  - "No registration of removed gateways in gateway/__init__.py"
+  - "No removed skills loaded in toolsets.py"
+  - "No removed providers in pyproject.toml extras"
+  - "All removed paths absent from codebase via grep verification"

@@ -1,0 +1,203 @@
+# Dockerfile.lite - Minimal hermes-lite image for Jetson Orin Nano
+# Base image: python:3.11-slim (~150MB base)
+# Target size: <350MB for the hermes-lite layer (excluding runtime volumes)
+# See REDESIGN.md §7.2 for full specification
+
+FROM python:3.11-slim
+
+# Metadata
+LABEL maintainer="hermes-lite developers"
+LABEL description="hermes-lite: minimal AI agent for Jetson Orin Nano 8GB"
+
+# ============================================================================
+# Environment and Build Args
+# ============================================================================
+
+# Set timezone to UTC for consistency
+ENV TZ=UTC
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Hermes-lite directories
+ENV HERMES_HOME=/home/hermes/.hermes-lite
+ENV REPOS_HOME=/home/hermes/repos
+
+# Ollama endpoint (assuming Ollama runs on host)
+ENV OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+ARG HERMES_LITE_VERSION=0.1.0
+ENV HERMES_LITE_VERSION=${HERMES_LITE_VERSION}
+
+# ============================================================================
+# System Dependencies (minimal)
+# ============================================================================
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Essential runtime tools
+    git \
+    curl \
+    ca-certificates \
+    # Build tools for some packages
+    build-essential \
+    # No: PostgreSQL, OpenCV, audio libs, X11, etc.
+    # Slim is already used, just add what we need
+    && rm -rf /var/lib/apt/lists/*
+
+# ============================================================================
+# Python Dependencies (minimal set from lite extras)
+# ============================================================================
+
+WORKDIR /build
+
+# Copy only the pyproject.toml to install dependencies
+COPY pyproject.toml .
+
+# Install Python runtime dependencies with lite extras only
+# This excludes all cloud providers, gateways, media gen, etc.
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -e .[lite] && \
+    # Clean up pip cache
+    rm -rf /root/.cache/pip/*
+
+# ============================================================================
+# Create Non-Root User
+# ============================================================================
+
+RUN groupadd -g 1000 hermes && \
+    useradd -m -u 1000 -g hermes hermes && \
+    mkdir -p ${HERMES_HOME} ${REPOS_HOME} && \
+    chown -R hermes:hermes ${HERMES_HOME} ${REPOS_HOME}
+
+# ============================================================================
+# Copy Application
+# ============================================================================
+
+WORKDIR /app
+
+# Copy source code
+COPY --chown=hermes:hermes . .
+
+# Copy and prepare config files
+RUN mkdir -p /app/config && \
+    cp lite-config.yaml /app/config/default-config.yaml && \
+    chown hermes:hermes /app/config/default-config.yaml
+
+# ============================================================================
+# User Setup and Permissions
+# ============================================================================
+
+USER hermes
+
+# Create necessary directories
+RUN mkdir -p \
+    ${HERMES_HOME}/logs \
+    ${HERMES_HOME}/skills \
+    ${HERMES_HOME}/workspaces \
+    ${HERMES_HOME}/queue \
+    ${HERMES_HOME}/diagnostics \
+    ${HERMES_HOME}/corpora \
+    ${REPOS_HOME}
+
+# ============================================================================
+# Startup Script
+# ============================================================================
+
+# Health check - ensure Hermes can start
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import hermes_state; print('OK')" || exit 1
+
+# ============================================================================
+# Entrypoint
+# ============================================================================
+
+# Create entrypoint script
+RUN cat > /app/entrypoint.sh << 'EOF'
+#!/bin/bash
+set -e
+
+# Set up config from environment or defaults
+if [ ! -f "${HERMES_HOME}/config.yaml" ]; then
+    echo "Initializing configuration from defaults..."
+    cp /app/config/default-config.yaml ${HERMES_HOME}/config.yaml
+fi
+
+# Verify Ollama is accessible
+if ! curl -s ${OLLAMA_BASE_URL}/api/tags > /dev/null; then
+    echo "ERROR: Ollama not accessible at ${OLLAMA_BASE_URL}"
+    echo "Ensure Ollama is running and accessible from the container"
+    exit 1
+fi
+
+# Launch hermes-lite gateway or CLI mode
+case "${HERMES_LITE_MODE:-gateway}" in
+    gateway)
+        echo "Starting hermes-lite gateway..."
+        exec python -m hermes_cli.gateway_cli
+        ;;
+    tui)
+        echo "Starting hermes-lite TUI..."
+        exec python -m hermes_cli.tui
+        ;;
+    cli)
+        echo "Starting interactive hermes-lite CLI..."
+        exec python -m hermes_cli.cli
+        ;;
+    *)
+        echo "Unknown mode: ${HERMES_LITE_MODE}"
+        echo "Supported modes: gateway, tui, cli"
+        exit 1
+        ;;
+esac
+EOF
+
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+# ============================================================================
+# Build Metadata
+# ============================================================================
+
+# Labels for image identification
+LABEL version="${HERMES_LITE_VERSION}"
+LABEL architecture="aarch64"
+LABEL target.hardware="NVIDIA Jetson Orin Nano 8GB"
+LABEL base.image="python:3.11-slim"
+LABEL description="Minimal hermes-lite image optimized for Jetson Orin Nano"
+
+# ============================================================================
+# Volume Mounts (for user documentation)
+# ============================================================================
+
+# Users can mount these volumes:
+# -v ~/.hermes-lite:/home/hermes/.hermes-lite      # Config and state
+# -v ~/repos:/home/hermes/repos                    # Local repo workspaces
+# -v /etc/localtime:/etc/localtime:ro             # Host timezone
+# --add-host=host.docker.internal:host-gateway    # Ollama access on host
+
+# ============================================================================
+# Docker-Compose Usage (reference)
+# ============================================================================
+
+# version: '3.8'
+# services:
+#   hermes-lite:
+#     image: hermes-lite:latest
+#     environment:
+#       OLLAMA_BASE_URL: http://host.docker.internal:11434
+#       HERMES_LITE_MODE: gateway
+#     volumes:
+#       - ~/.hermes-lite:/home/hermes/.hermes-lite
+#       - ~/repos:/home/hermes/repos
+#       - /etc/localtime:/etc/localtime:ro
+#     ports:
+#       - "8000:8000"  # Gateway API port (if exposed)
+#     add_host:
+#       - "host.docker.internal:host-gateway"
+#     restart: unless-stopped
+#     deploy:
+#       resources:
+#         limits:
+#           memory: 4G
+#         reservations:
+#           memory: 2G

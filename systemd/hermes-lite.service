@@ -1,0 +1,172 @@
+# hermes-lite.service - Systemd unit for hermes-lite gateway
+# Install to: /etc/systemd/system/hermes-lite.service
+# Enable with: sudo systemctl enable hermes-lite.service
+# Start with: sudo systemctl start hermes-lite.service
+# View logs: sudo journalctl -u hermes-lite -f
+#
+# See REDESIGN.md §7.3 for full specification
+
+[Unit]
+Description=Hermes-Lite AI Agent Gateway
+Documentation=file:///home/hermes/.hermes-lite/REDESIGN.md
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+# ============================================================================
+# User and Security (§7.3)
+# ============================================================================
+
+# Non-root user
+User=hermes
+Group=hermes
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# ============================================================================
+# Resource Limits (Jetson-specific, §12.8)
+# ============================================================================
+
+# Memory limits: Hard cap 5.5GB, soft limit 4GB
+# Orin Nano 8GB total, need room for Ollama, system services
+MemoryHigh=4G
+MemoryMax=5500M
+
+# CPU: Let the system manage, just note the constraint exists
+# CPUQuota=400%  # 4 cores (A78 cluster)
+
+# File descriptor limit
+LimitNOFILE=65536
+
+# Process limits
+LimitNPROC=4096
+
+# ============================================================================
+# Security Hardening (§7.3, §12.9)
+# ============================================================================
+
+# Filesystem security
+ProtectHome=tmpfs                       # Temp fs for /root, /tmp
+ProtectSystem=strict                    # /sys, /proc read-only
+ReadWritePaths=-${HERMES_HOME}          # Explicit write permission
+ReadWritePaths=-${HOME}/repos           # Local workspace access
+PrivateTmp=yes                          # Isolated /tmp
+
+# Network isolation (whitelist only what's needed)
+RestrictNetworkRaw=yes                  # Disable raw sockets
+RestrictNetworkNamespace=yes
+
+# Process hardening
+NoNewPrivileges=yes                     # Cannot escalate privs
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+
+# Syscall filtering (block dangerous calls)
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources
+
+# ============================================================================
+# Environment
+# ============================================================================
+
+Type=simple
+
+# Home directory for hermes user
+WorkingDirectory=${HOME}
+
+# Environment variables
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="LANG=C.UTF-8"
+Environment="TZ=UTC"
+Environment="HERMES_HOME=${HOME}/.hermes-lite"
+Environment="OLLAMA_BASE_URL=http://127.0.0.1:11434"
+
+# Config file override (if specified in /etc/hermes-lite/config)
+Environment="HERMES_CONFIG_PATH=${HOME}/.hermes-lite/config.yaml"
+
+# Enable gateway platform (discord is default)
+Environment="HERMES_GATEWAY_PLATFORMS=discord,tui"
+
+# Thermal management (Jetson-specific)
+Environment="JETSON_POWER_MODE=1"  # 25W by default
+
+# ============================================================================
+# Startup
+# ============================================================================
+
+ExecStartPre=/bin/sh -c 'mkdir -p ${HERMES_HOME}/logs'
+ExecStartPre=/bin/sh -c 'test -f ${HERMES_HOME}/config.yaml || echo "WARNING: ${HERMES_HOME}/config.yaml not found"'
+
+# Main service command
+ExecStart=/usr/bin/python3.11 -m hermes_cli.gateway_cli
+
+# Optional: health check command (monitoring)
+ExecHealthCheck=/usr/bin/python3.11 -c "import hermes_state; print('OK')"
+
+# Graceful shutdown (allow 30s for cleanup)
+ExecStop=/bin/kill -TERM $MAINPID
+TimeoutStopSec=30
+
+# ============================================================================
+# Logging
+# ============================================================================
+
+# Send output to journal
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=hermes-lite
+
+# Journal forwarding (optional, requires systemd-journald setup)
+# JournalMaxUse=100M
+# JournalMaxFileSize=10M
+
+# ============================================================================
+# Installation
+# ============================================================================
+
+[Install]
+# Start on boot
+WantedBy=multi-user.target
+
+# Also start after network is available
+After=network-online.target
+
+# Conflict with any other hermes services
+Conflicts=hermes.service
+
+# ============================================================================
+# Notes for Operators
+# ============================================================================
+
+# Managing the service:
+#   systemctl start hermes-lite
+#   systemctl stop hermes-lite
+#   systemctl restart hermes-lite
+#   systemctl status hermes-lite
+#   systemctl enable hermes-lite    # Auto-start on boot
+#   systemctl disable hermes-lite   # Don't auto-start
+#
+# Monitoring:
+#   journalctl -u hermes-lite -f                    # Follow logs
+#   journalctl -u hermes-lite --since "1 hour ago" # Recent logs
+#   journalctl -u hermes-lite -n 50                # Last 50 lines
+#
+# Troubleshooting:
+#   systemctl show hermes-lite                      # Detailed status
+#   systemctl show-environment                      # Service environment
+#   sudo systemctl edit hermes-lite                 # Edit config safely
+#   sudo systemctl daemon-reload                    # Apply changes
+#
+# Remote access:
+#   Discord gateway will be active if DISCORD_BOT_TOKEN is set in:
+#   ${HOME}/.hermes-lite/.env
+#
+# Hardware monitoring:
+#   Watch thermal: watch 'cat /sys/class/thermal/thermal_zone*/temp'
+#   Watch power:   watch 'cat /sys/devices/virtual/powercap/*/energy_uj'
+#   Monitor via:   sudo jtop
