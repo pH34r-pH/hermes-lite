@@ -220,11 +220,18 @@ class MiniSWERunner:
             }
             self.client = OpenAI(**client_kwargs)
         else:
-            from agent.auxiliary_client import resolve_provider_client
-            self.client, _ = resolve_provider_client("openrouter", model=model)
-            if self.client is None:
-                # Fallback: try auto-detection
-                self.client, _ = resolve_provider_client("auto", model=model)
+            try:
+                from agent.auxiliary_client import resolve_provider_client
+                self.client, _ = resolve_provider_client("openrouter", model=model)
+                if self.client is None:
+                    self.client, _ = resolve_provider_client("auto", model=model)
+            except ImportError:
+                # auxiliary_client removed in hermes-lite
+                from openai import OpenAI
+                self.client = OpenAI(
+                    base_url="https://openrouter.ai/api/v1",
+                    api_key=os.environ.get("OPENROUTER_API_KEY", ""),
+                )
             if self.client is None:
                 from openai import OpenAI
                 self.client = OpenAI(

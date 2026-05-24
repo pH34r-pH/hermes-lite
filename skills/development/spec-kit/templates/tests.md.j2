@@ -1,0 +1,41 @@
+# Test Requirements: {{ feature_name }}
+
+**Purpose**: Executable requirements derived from spec and plan
+**Created**: {{ created_date }}
+**Feature**: {{ spec_link }}
+
+## Spec-Derived Tests
+
+{% for test in spec_tests %}
+### {{ test.id }} — {{ test.title }}
+
+**Requirement**: {{ test.requirement }}
+
+**Type**: {{ test.type }}
+
+**Scope**: {{ test.scope }}
+
+**Expected Behavior**: {{ test.expected_behavior }}
+
+---
+{% endfor %}
+
+## Plan-Derived Tests
+
+{% for test in plan_tests %}
+### {{ test.id }} — {{ test.title }}
+
+**Component**: {{ test.component }}
+
+**Contract Under Test**: {{ test.contract }}
+
+**Mocking Strategy**: {{ test.mocking }}
+
+---
+{% endfor %}
+
+## Notes
+
+- Tests should be written and FAIL before implementation begins (TDD)
+- Integration tests validate end-to-end user stories
+- Unit tests validate individual components and contracts

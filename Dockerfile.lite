@@ -1,0 +1,48 @@
+# hermes-lite Dockerfile
+# Target: < 350 MB uncompressed
+# Base: python:3.11-slim
+
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="hermes-lite"
+LABEL org.opencontainers.image.description="Lightweight Hermes Agent fork for edge devices"
+
+# Install runtime dependencies only (no Node.js, npm, Playwright, docker-cli, openssh-client)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# ffmpeg is optional and only installed when voice is enabled
+ARG WITH_VOICE=false
+RUN if [ "$WITH_VOICE" = "true" ]; then \
+      apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+      && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+WORKDIR /app
+
+# Install hermes-lite with lite extras only
+COPY pyproject.toml .
+COPY lite-config.yaml .
+COPY hermes_cli/ ./hermes_cli/
+COPY agent/ ./agent/
+COPY gateway/ ./gateway/
+COPY skills/ ./skills/
+COPY plugins/ ./plugins/
+COPY locales/ ./locales/
+COPY optional-skills/ ./optional-skills/
+COPY tools/ ./tools/
+
+# Install the package in editable mode with lite extras
+RUN pip install --no-cache-dir -e ".[lite]"
+
+# Create state directories
+RUN mkdir -p /root/.hermes-lite/queue /root/.hermes-lite/snapshots /root/.hermes-lite/logs \
+    && chmod 0700 /root/.hermes-lite
+
+ENV HERMES_LITE_PROFILE=1
+ENV PYTHONUNBUFFERED=1
+
+ENTRYPOINT ["hermes-lite"]
+CMD ["--profile", "lite", "gateway"]

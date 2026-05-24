@@ -1,0 +1,38 @@
+# Analysis Report: {{ feature_name }}
+
+**Date**: {{ analysis_date }}
+**Feature**: {{ feature_dir }}
+**Status**: {{ status }}
+
+## Artifacts Reviewed
+
+- [x] `spec.md`
+- [x] `plan.md`
+- [x] `tasks.md`
+
+## Consistency Checks
+
+### Task ID Uniqueness
+
+{{ task_id_uniqueness }}
+
+### Dependency Graph Validation
+
+{{ dependency_validation }}
+
+### Plan Section References
+
+{{ plan_section_references }}
+
+## Findings
+
+{% for finding in findings %}
+### {{ finding.severity }}: {{ finding.title }}
+
+{{ finding.description }}
+
+{% endfor %}
+
+## Summary
+
+{{ summary }}

@@ -1,0 +1,36 @@
+name: web-frontend
+bundle_id: web-frontend
+description: "Web frontend bundle: framework-aware patterns, staticwebapp.config.json validation/editing, local preview, and smoke checks."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: web
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [web, frontend, static-web-app, astro, nextjs, sveltekit, lighthouse]
+    related_skills: [azure-ops, linux-vm-api]
+    memory_profiles: [web]
+    target_model: mistral-3:3B
+
+skills:
+  - id: staticwebapp-config-validate
+    name: staticwebapp-config-validate
+    description: Validate staticwebapp.config.json against the SWA schema and report errors
+    step: 1
+
+  - id: staticwebapp-config-edit
+    name: staticwebapp-config-edit
+    description: Safely edit staticwebapp.config.json while preserving schema validity
+    step: 2
+    approval_gate: config-mutation
+
+  - id: frontend-preview
+    name: frontend-preview
+    description: Start a local preview via swa start or npm run dev, gated to localhost only
+    step: 3
+
+  - id: frontend-smoke-check
+    name: frontend-smoke-check
+    description: Run Lighthouse-style checks against deployed SWA URL and report scores
+    step: 4

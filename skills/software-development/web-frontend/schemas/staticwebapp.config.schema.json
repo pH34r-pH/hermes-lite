@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StaticWebAppConfig",
+  "description": "Schema for Azure Static Web Apps configuration file (staticwebapp.config.json)",
+  "type": "object",
+  "properties": {
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "route": { "type": "string" },
+          "methods": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "rewrite": { "type": "string" },
+          "redirect": { "type": "string" },
+          "statusCode": { "type": "integer" },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
+          "allowedRoles": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["route"]
+      }
+    },
+    "navigationFallback": {
+      "type": "object",
+      "properties": {
+        "rewrite": { "type": "string" },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "responseOverrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "rewrite": { "type": "string" },
+          "statusCode": { "type": "integer" }
+        }
+      }
+    },
+    "globalHeaders": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "mimeTypes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

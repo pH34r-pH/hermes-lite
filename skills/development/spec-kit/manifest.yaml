@@ -1,0 +1,67 @@
+name: spec-kit
+bundle_id: spec-kit
+description: "Spec-driven development bundle: spec -> plan -> tasks -> implement. 10 sequential skills for offline Jetson development."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: spec
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [spec-driven-development, planning, offline, jetson]
+    related_skills: [arxiv-research, local-repo-workspace]
+    memory_profiles: [spec, dev]
+    target_model: mistral-3:3B
+
+skills:
+  - id: spec-constitution
+    name: spec-constitution
+    description: Create or update workspace constitution
+    step: 1
+
+  - id: spec-specify
+    name: spec-specify
+    description: Convert research seed or user ask into a feature spec
+    step: 2
+    approval_gate: research-to-spec
+
+  - id: spec-clarify
+    name: spec-clarify
+    description: Generate targeted clarification questions and record answers
+    step: 3
+
+  - id: spec-plan
+    name: spec-plan
+    description: Produce architecture plan with contracts and risks
+    step: 4
+
+  - id: spec-tasks
+    name: spec-tasks
+    description: Break plan into dependency-ordered task records
+    step: 5
+
+  - id: spec-test
+    name: spec-test
+    description: Optionally emit executable test requirements
+    step: 6
+
+  - id: spec-analyze
+    name: spec-analyze
+    description: Cross-artifact consistency analysis across spec, plan, and tasks
+    step: 7
+
+  - id: spec-checklist
+    name: spec-checklist
+    description: Generate a verification checklist for the active feature
+    step: 8
+
+  - id: spec-implement
+    name: spec-implement
+    description: Execute tasks one-by-one through LocalRepoWorkspace
+    step: 9
+    approval_gate: tasks-to-implement
+
+  - id: spec-review
+    name: spec-review
+    description: Invoke background reviewer over diff set before opening PR
+    step: 10

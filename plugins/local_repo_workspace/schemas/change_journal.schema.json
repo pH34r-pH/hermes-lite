@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["step", "session_id", "timestamp", "workspace_id"],
+  "properties": {
+    "step": { "type": "integer", "description": "Sequential step number within session" },
+    "session_id": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "workspace_id": { "type": "string" },
+    "diff": { "type": "string" },
+    "files_changed": { "type": "integer" },
+    "lines_changed": { "type": "integer" },
+    "commit_sha": { "type": ["string", "null"] },
+    "precommit_gate_result": {
+      "type": ["object", "null"],
+      "properties": {
+        "status": { "type": "string", "enum": ["passed", "failed", "skipped"] },
+        "stdout": { "type": "string" },
+        "stderr": { "type": "string" },
+        "command": { "type": "string" }
+      }
+    },
+    "pr_url": { "type": "string" },
+    "rejection_reason": { "type": ["string", "null"] }
+  }
+}

@@ -1,0 +1,60 @@
+# Tasks: {{ feature_name }}
+
+**Input**: Design documents from `/specs/{{ feature_dir }}/`
+
+**Prerequisites**: plan.md (required), spec.md (required for user stories)
+
+**Tests**: Tests are included as specified in the feature specification.
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to
+- Include exact file paths in descriptions
+
+---
+
+{% for phase in phases %}
+## {{ phase.name }}
+
+{% if phase.purpose %}**Purpose**: {{ phase.purpose }}{% endif %}
+
+{% for task in phase.tasks %}
+- [ ] {{ task.id }} {% if task.parallel %}[P] {% endif %}{% if task.story %}[{{ task.story }}] {% endif %}{{ task.description }}
+{% endfor %}
+
+{% if phase.checkpoint %}**Checkpoint**: {{ phase.checkpoint }}{% endif %}
+
+---
+
+{% endfor %}
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+{% for dep in phase_dependencies %}
+- **{{ dep.phase }}**: {{ dep.description }}
+{% endfor %}
+
+### User Story Dependencies
+
+{% for dep in story_dependencies %}
+- **{{ dep.story }}**: {{ dep.description }}
+{% endfor %}
+
+### Within Each User Story
+
+- Tests (if included) MUST be written and FAIL before implementation
+- Core implementation before integration
+- Story complete before moving to next priority
+
+## Notes
+
+- [P] tasks = different files, no dependencies
+- Each user story should be independently completable and testable
+- Verify tests fail before implementing
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently

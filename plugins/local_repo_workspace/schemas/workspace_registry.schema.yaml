@@ -1,0 +1,45 @@
+type: object
+properties:
+  workspaces:
+    type: array
+    items:
+      type: object
+      required: [id, friendly_name, path]
+      properties:
+        id:
+          type: string
+          pattern: "^[a-zA-Z0-9_\\-]+$"
+        friendly_name:
+          type: string
+        path:
+          type: string
+          description: Absolute path to repo root
+        default_branch:
+          type: string
+          default: main
+        allowed_branch_prefixes:
+          type: array
+          items:
+            type: string
+          default: ["hermes/"]
+        push_remote:
+          type: string
+        commit_author:
+          type: string
+        allowed_file_globs:
+          type: array
+          items:
+            type: string
+          default: ["*"]
+        required_reviewers:
+          type: array
+          items:
+            type: string
+          default: []
+        approval_mode:
+          type: string
+          enum: [auto, confirm, pr-only, read-only]
+          default: pr-only
+description: |
+  Workspace registry for hermes-lite.
+  New workspaces default to approval_mode: pr-only.

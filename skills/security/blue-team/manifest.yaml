@@ -1,0 +1,30 @@
+name: blue-team
+bundle_id: blue-team
+description: "Security blue-team bundle: baseline management, audit-readiness, and log review. Loaded by /sec, no separate slash command."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: null
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [security, blue-team, baseline, audit, log-review]
+    related_skills: [red-team]
+    memory_profiles: [security]
+    target_model: mistral-3:3B
+
+skills:
+  - id: sec-baseline-manage
+    name: sec-baseline-manage
+    description: Store, compare, and update security baselines for config files and scan results
+    step: 1
+
+  - id: sec-log-review
+    name: sec-log-review
+    description: Bounded journalctl parsing for security-relevant units with attack signature matching
+    step: 2
+
+  - id: sec-audit-readiness
+    name: sec-audit-readiness
+    description: Verify required security artifacts exist and are up to date
+    step: 3

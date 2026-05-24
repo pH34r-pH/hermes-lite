@@ -1,0 +1,62 @@
+# Implementation Plan: {{ feature_name }}
+
+**Branch**: `{{ branch_name }}` | **Date**: {{ created_date }} | **Spec**: {{ spec_link }}
+
+**Input**: Feature specification from `/specs/{{ feature_dir }}/spec.md`
+
+## Summary
+
+{{ summary }}
+
+## Technical Context
+
+**Language/Version**: {{ language_version }}
+
+**Primary Dependencies**: {{ dependencies }}
+
+**Storage**: {{ storage }}
+
+**Testing**: {{ testing_framework }}
+
+**Target Platform**: {{ target_platform }}
+
+**Project Type**: {{ project_type }}
+
+**Performance Goals**: {{ performance_goals }}
+
+**Constraints**: {{ constraints }}
+
+**Scale/Scope**: {{ scale_scope }}
+
+## Constitution Check
+
+*GATE: Must pass before implementation.*
+
+{{ constitution_check }}
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/{{ feature_dir }}/
+├── plan.md              # This file
+├── spec.md              # Feature specification
+└── tasks.md             # Task breakdown
+```
+
+### Source Code (repository root)
+
+{{ source_structure }}
+
+## Architecture
+
+{{ architecture_overview }}
+
+## Component Contracts
+
+{{ component_contracts }}
+
+## Risk Assessment
+
+{{ risk_assessment }}

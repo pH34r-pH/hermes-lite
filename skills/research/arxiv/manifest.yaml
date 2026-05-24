@@ -1,0 +1,46 @@
+name: arxiv-research
+bundle_id: arxiv-research
+description: "ArXiv research bundle: discover, fetch, skim, extract, compare, and write. 6 sequential skills for offline-capable academic literature review."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: arxiv
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [arxiv, research, offline, academic, paper-review, jetson]
+    related_skills: [spec-kit, local-repo-workspace]
+    memory_profiles: [research]
+    target_model: mistral-3:3B
+
+skills:
+  - id: arxiv-discover
+    name: arxiv-discover
+    description: Query arXiv API with rate limiting, cache results, and deduplicate against local knowledge repo
+    step: 1
+
+  - id: arxiv-fetch
+    name: arxiv-fetch
+    description: Download PDF and metadata into the knowledge repo with content-addressed deduplication
+    step: 2
+
+  - id: arxiv-skim
+    name: arxiv-skim
+    description: Produce a section-by-section markdown skim with page-aware citations
+    step: 3
+
+  - id: arxiv-extract
+    name: arxiv-extract
+    description: Extract structured claims, methods, datasets, results, and limitations into JSON
+    step: 4
+
+  - id: arxiv-compare
+    name: arxiv-compare
+    description: Generate a markdown comparison table across papers in the active reading list
+    step: 5
+
+  - id: arxiv-write
+    name: arxiv-write
+    description: Draft a research note with resolved citations and optionally emit a spec-seed.json envelope
+    step: 6
+    approval_gate: research-to-spec

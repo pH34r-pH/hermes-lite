@@ -1,0 +1,166 @@
+# hermes-lite — Canonical Configuration Profile
+#
+# Purpose: Pins the default model to a local Ollama endpoint and defines the
+# minimal surface required for offline-first research and spec-driven
+# development on a Jetson Orin Nano or equivalent Linux edge device.
+#
+# Merge order (later wins):
+#   1. lite-config.yaml   (this file — baked into the repo)
+#   2. ~/.hermes/config.yaml   (user overlay)
+#   3. CLI flags / env vars
+#
+# Usage: hermes --profile lite <command>
+# Without --profile lite the upstream default profile is used.
+
+profile: lite
+
+model: "ollama:ministral-3:3b"
+
+# Fallback chain when the primary model fails or the tool-call failure
+# budget is exhausted.  Ollama is always attempted first so the device
+# stays functional when offline.
+escalation_order:
+  - ollama
+  - copilot
+  - openai
+  - claude
+
+# Only these gateways are registered at startup.  Any reference to a
+# removed gateway in a user config raises ConfigurationError.
+enabled_gateways:
+  - discord
+  - openwebui
+  - tui
+
+# Iteration cap — small models hallucinate tool calls more often, so
+# the per-session loop budget is tightened from upstream defaults.
+max_iterations: 25
+
+# After 3 consecutive tool-call failures within a single kit the agent
+# escalates to the next provider in escalation_order.
+tool_call_failure_budget: 3
+
+# Enable byte-stable system-prompt prefix caching for Ollama.  The
+# stable tier must stay << 300 tokens so the KV-cache prefix is cheap.
+prompt_prefix_caching: true
+
+# Per-session JSON snapshots are written to ~/.hermes-lite/snapshots/
+# for offline trajectory analysis and curator review.
+per_session_snapshots: true
+
+# Curator / background reviewer ------------------------------------------------
+curator:
+  mode: deferred_queue          # inline | deferred_queue
+  threshold_jobs: 25            # batch size before prompting user
+  threshold_hours: 4            # max age before prompting user
+  queue_dir: ~/.hermes-lite/queue
+
+# Media generation — disabled in lite.  References to image/video/voice
+# skills raise ConfigurationError at startup when fail_closed is true.
+media:
+  image: false
+  video: false
+  voice: false
+  fail_closed: true
+
+# Provider denylist — any key referencing these providers in any config
+# layer causes immediate startup failure.  Keep in sync with
+# 000-provider-cleanup and 001-gateway-cleanup specs.
+removed_providers:
+  - azure_foundry
+  - bedrock
+  - gemini_native
+  - gemini_cloudcode
+  - codex
+  - xai
+  - moonshot
+  - minimax
+  - huggingface_hub
+  - novitaai
+  - nvidia_nim
+  - mimo
+  - openrouter
+  - zai_glm
+  - nous_portal
+  - auxiliary
+  - lmstudio
+
+removed_gateways:
+  - telegram
+  - slack
+  - whatsapp
+  - signal
+  - email
+  - yuanbao
+  - weixin
+  - wecom
+  - feishu
+  - dingtalk
+  - qqbot
+  - matrix
+  - mattermost
+  - homeassistant
+  - bluebubbles
+  - sms
+  - msgraph_webhook
+  - webhook
+
+# Tool-surface slimmer ---------------------------------------------------------
+# Only the kits listed here expose tools to the model.  When a kit is
+# loaded its allowlist is matched against the full tool registry;
+# everything else is hidden.
+active_kits:
+  - research
+  - spec
+  - dev
+  - web
+  - azure
+  - infra
+  - api
+  - security
+
+# Diagnostics ------------------------------------------------------------------
+# Stable newline-delimited JSON log streams.
+diagnostics:
+  enabled: true
+  log_dir: ~/.hermes-lite/logs
+  retention_days: 90
+  streams:
+    - agent
+    - tools
+    - providers
+    - workspace
+    - security
+    - thermal
+    - api
+
+# Memory profiles — one namespace per workflow --------------------------------
+memory_profiles:
+  default: spec
+  research:
+    provider: honcho
+    namespace: research
+  spec:
+    provider: honcho
+    namespace: spec
+  dev:
+    provider: honcho
+    namespace: dev
+  web:
+    provider: honcho
+    namespace: web
+  azure:
+    provider: honcho
+    namespace: azure
+  infra:
+    provider: honcho
+    namespace: infra
+  api:
+    provider: honcho
+    namespace: api
+  security:
+    provider: honcho
+    namespace: security
+    # The security profile is write-only to all kits except /sec.
+    write_allowlist:
+      - security

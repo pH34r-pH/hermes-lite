@@ -1,0 +1,74 @@
+name: azure-ops
+bundle_id: azure-ops
+description: "Azure operations bundle: read-only inspection, SWA management, VM operations, Bicep CRUD, and Key Vault access."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: azure
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [azure, devops, cloud, bicep, static-web-apps, vm, keyvault]
+    related_skills: [web-frontend, linux-vm-api]
+    memory_profiles: [azure, infra]
+    target_model: mistral-3:3B
+
+skills:
+  - id: az-login-status
+    name: az-login-status
+    description: Return current Azure CLI login state and default subscription
+    step: 1
+
+  - id: az-account-show
+    name: az-account-show
+    description: Return active account details (name, tenant, subscription ID)
+    step: 2
+
+  - id: az-resource-list
+    name: az-resource-list
+    description: Return filtered read-only list of resources in bound subscription/resource group
+    step: 3
+
+  - id: az-swa-show
+    name: az-swa-show
+    description: Return current Azure Static Web App configuration
+    step: 4
+
+  - id: az-swa-config-update
+    name: az-swa-config-update
+    description: Edit SWA configuration (routes, auth providers, custom domains)
+    step: 5
+    approval_gate: swa-mutation
+
+  - id: az-swa-deploy
+    name: az-swa-deploy
+    description: Produce deploy artifact and upload to SWA or trigger GitHub Actions workflow
+    step: 6
+    approval_gate: swa-deploy
+
+  - id: az-vm-status
+    name: az-vm-status
+    description: Return VM power state, private IP, and API health endpoint status
+    step: 7
+
+  - id: az-vm-run-command
+    name: az-vm-run-command
+    description: Execute allowed diagnostics commands on VM via Azure Run Command API
+    step: 8
+    approval_gate: vm-command
+
+  - id: bicep-validate
+    name: bicep-validate
+    description: Validate Bicep modules against Azure schema
+    step: 9
+
+  - id: bicep-deploy
+    name: bicep-deploy
+    description: Deploy Bicep modules for SWA + VM topology
+    step: 10
+    approval_gate: bicep-deploy
+
+  - id: keyvault-secret-show
+    name: keyvault-secret-show
+    description: Resolve secrets read-only from Azure Key Vault
+    step: 11

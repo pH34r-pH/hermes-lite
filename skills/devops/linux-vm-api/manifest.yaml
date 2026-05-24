@@ -1,0 +1,58 @@
+name: linux-vm-api
+bundle_id: linux-vm-api
+description: "Linux VM API bundle: systemd management, reverse-proxy editing, API key rotation, journalctl diagnostics, and MCP validation."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: vm
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [linux, vm, systemd, reverse-proxy, api, mcp, partner-model]
+    related_skills: [azure-ops, web-frontend]
+    memory_profiles: [infra, api]
+    target_model: mistral-3:3B
+
+skills:
+  - id: systemd-status
+    name: systemd-status
+    description: Report state of API proxy and partner Ollama systemd units
+    step: 1
+
+  - id: systemd-restart
+    name: systemd-restart
+    description: Restart a specified systemd unit on the VM
+    step: 2
+    approval_gate: systemd-mutation
+
+  - id: reverse-proxy-edit
+    name: reverse-proxy-edit
+    description: Edit caddy or nginx configuration for API endpoints including /v1/partner/* route family
+    step: 3
+    approval_gate: proxy-mutation
+
+  - id: reverse-proxy-validate
+    name: reverse-proxy-validate
+    description: Validate reverse-proxy config syntax before applying changes
+    step: 4
+
+  - id: apikey-rotate
+    name: apikey-rotate
+    description: Rotate API keys via Key Vault and update systemd unit environment file
+    step: 5
+    approval_gate: credential-rotation
+
+  - id: journalctl-read
+    name: journalctl-read
+    description: Return bounded slice of logs for specified unit; interactive tailing prohibited
+    step: 6
+
+  - id: mcp-validate
+    name: mcp-validate
+    description: Validate API MCP surface against hermes-lite mcp/ client skill
+    step: 7
+
+  - id: partner-model-health
+    name: partner-model-health
+    description: Call /v1/partner/chat/completions with test prompt and verify OpenAI chat completions schema
+    step: 8

@@ -1,0 +1,65 @@
+name: red-team
+bundle_id: red-team
+description: "Security red-team bundle: self-pentest against agent's own deployed surface. 9 sequential skills exposed through /sec slash command."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+slash_command: sec
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [security, red-team, pentest, threat-model, fuzz, credentials]
+    related_skills: [blue-team]
+    memory_profiles: [security, web, api, infra]
+    target_model: mistral-3:3B
+
+skills:
+  - id: sec-threat-model
+    name: sec-threat-model
+    description: Produce or refresh a STRIDE-style threat model for the SWA + VM API + Bicep stack
+    step: 1
+
+  - id: sec-static-scan
+    name: sec-static-scan
+    description: Run ripgrep secret scanning, dependency CVE audit, and Bicep linter
+    step: 2
+
+  - id: sec-config-review
+    name: sec-config-review
+    description: Review configs against baseline and emit delta report
+    step: 3
+
+  - id: sec-auth-probe
+    name: sec-auth-probe
+    description: Active auth checks against deployed API (missing-auth, expired-token replay, role escalation)
+    step: 4
+    approval_gate: active-probe
+
+  - id: sec-web-probe
+    name: sec-web-probe
+    description: Active web checks against deployed SWA (directory listing, mixed content, open redirect)
+    step: 5
+    approval_gate: active-probe
+
+  - id: sec-rate-limit-probe
+    name: sec-rate-limit-probe
+    description: Controlled burst testing against allowlisted endpoints
+    step: 6
+    approval_gate: active-probe
+
+  - id: sec-fuzz
+    name: sec-fuzz
+    description: Schema-driven fuzzing of API request bodies with fixed iteration budget
+    step: 7
+    approval_gate: active-probe
+
+  - id: sec-findings-write
+    name: sec-findings-write
+    description: Write structured findings report and emit spec-seed.json
+    step: 8
+
+  - id: sec-rotate-credentials
+    name: sec-rotate-credentials
+    description: Rotate API keys, SSH keys, and Tailscale auth keys without logging secrets
+    step: 9
+    approval_gate: credential-rotation

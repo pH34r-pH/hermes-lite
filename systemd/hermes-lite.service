@@ -1,0 +1,60 @@
+[Unit]
+Description=Hermes Lite Agent
+Documentation=https://github.com/hermes-lite/hermes-lite
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Ensure state directories exist before starting
+ExecStartPre=/bin/sh -c 'mkdir -p %h/.hermes-lite %h/repos %h/.hermes-lite/logs %h/.hermes-lite/queue %h/.hermes-lite/snapshots'
+ExecStart=%h/.local/bin/hermes-lite gateway --profile lite
+Restart=on-failure
+RestartSec=30
+
+# Memory constraints sized for Jetson Orin Nano 8 GB unified pool
+# minus Ollama's working set (~3 GB for ministral-3:3b Q4).
+# Edit these limits if your host has < 5.5 GB RAM available.
+MemoryHigh=4G
+MemoryMax=5.5G
+
+# Filesystem isolation — only agent state and registered repos are writable
+ProtectHome=tmpfs
+ReadWritePaths=%h/.hermes-lite %h/repos %h/.hermes
+
+# Process hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+
+# Network egress filtering — allowlist known endpoints only.
+# IPAddressAllow / IPAddressDeny work regardless of host firewall backend
+# (nftables or iptables) when systemd is compiled with libiptc/libnftables.
+# Uncomment and tailor the lines below to your deployment:
+# IPAddressAllow=127.0.0.1/32
+# IPAddressAllow=api.openai.com
+# IPAddressAllow=api.anthropic.com
+# IPAddressAllow=discord.com
+# IPAddressAllow=github.com
+# IPAddressAllow=raw.githubusercontent.com
+# IPAddressAllow=arxiv.org
+# IPAddressAllow=openalex.org
+# IPAddressDeny=any
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment="HERMES_LITE_PROFILE=1"
+Environment="PYTHONUNBUFFERED=1"
+Environment="OLLAMA_HOST=http://127.0.0.1:11434"
+
+[Install]
+WantedBy=default.target

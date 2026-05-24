@@ -1,0 +1,96 @@
+# Kit allowlists for agent/tool_surface.py
+#
+# Each key is a kit name; the value is an ordered list of tool names that
+# the kit is permitted to expose to the model.  Tools not listed here are
+# hidden when that kit is active.
+#
+# Adding a tool name that does not exist in the registry logs a warning
+# but does not crash.
+
+research:
+  - web_search
+  - web_extract
+  - arxiv_search
+  - arxiv_download
+  - arxiv_extract
+  - arxiv_compare
+  - arxiv_write
+  - corpus_wiki_lookup
+  - corpus_recall
+
+spec:
+  - spec_constitution
+  - spec_specify
+  - spec_clarify
+  - spec_plan
+  - spec_tasks
+  - spec_test
+  - spec_analyze
+  - spec_checklist
+  - spec_implement
+  - spec_review
+  - workspace_list
+  - workspace_locate
+  - workspace_diff
+  - workspace_apply_patch
+  - workspace_commit
+  - workspace_push
+  - workspace_open_pr
+
+dev:
+  - codex
+  - opencode
+  - claude_code
+  - python_debugpy
+  - node_inspect_debugger
+  - test_driven_development
+  - systematic_debugging
+  - plan
+  - spike
+  - requesting_code_review
+
+web:
+  - staticwebapp_config_edit
+  - swa_deploy
+  - swa_preview
+  - lighthouse_check
+  - browser_navigate
+  - browser_snapshot
+
+azure:
+  - az_login_status
+  - az_account_show
+  - az_resource_list
+  - az_swa_show
+  - az_swa_config_update
+  - az_swa_deploy
+  - az_vm_status
+  - az_vm_run_command
+  - bicep_validate
+  - bicep_deploy
+  - keyvault_secret_show
+
+infra:
+  - bicep_validate
+  - bicep_deploy
+  - az_vm_status
+  - az_vm_run_command
+
+api:
+  - ollama_model_list
+  - ollama_model_pull
+  - systemd_status
+  - systemd_restart
+  - journalctl_read
+  - caddy_reload
+
+security:
+  - sec_threat_model
+  - sec_static_scan
+  - sec_config_review
+  - sec_auth_probe
+  - sec_web_probe
+  - sec_rate_limit_probe
+  - sec_fuzz
+  - sec_findings_write
+  - sec_rotate_credentials

@@ -1,0 +1,30 @@
+# Verification Checklist: {{ feature_name }}
+
+**Purpose**: Validate implementation completeness and quality before PR
+**Created**: {{ created_date }}
+**Feature**: {{ spec_link }}
+
+## Acceptance Criteria
+
+{% for criterion in acceptance_criteria %}
+- [ ] {{ criterion.id }} {{ criterion.description }}
+{% endfor %}
+
+## Implementation Checks
+
+{% for check in implementation_checks %}
+- [ ] {{ check.id }} {{ check.description }}
+{% endfor %}
+
+## Quality Gates
+
+- [ ] All tasks in `tasks.md` are marked complete
+- [ ] `spec-analyze` reports zero inconsistencies
+- [ ] Pre-commit gates pass for all commits
+- [ ] Background reviewer findings are addressed (or documented as accepted)
+
+## Notes
+
+- Check items off as completed: `[x]`
+- Add comments or findings inline
+- Link to relevant resources or documentation

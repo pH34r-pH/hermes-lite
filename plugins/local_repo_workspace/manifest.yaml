@@ -1,0 +1,38 @@
+name: local-repo-workspace
+bundle_id: local-repo-workspace
+description: "Local repository workspace plugin: the only sanctioned path for the agent to mutate code outside ~/.hermes-lite/. Maintains a workspace registry, enforces branch hygiene, change budgets, pre-commit gates, and structured change journals."
+version: 1.0.0
+author: Hermes Agent
+license: MIT
+platforms: [linux, macos, windows]
+metadata:
+  hermes:
+    tags: [workspace, git, repo, patch, commit, push, pr, safety, audit]
+    related_skills: [spec-kit, web-frontend, azure-ops]
+    target_model: mistral-3:3B
+
+tools:
+  - name: workspace.list
+    description: List all registered local repo workspaces with metadata
+    emoji: "📁"
+  - name: workspace.locate
+    description: Locate a workspace by natural-language query
+    emoji: "🔍"
+  - name: workspace.status
+    description: Get git status for a workspace
+    emoji: "📊"
+  - name: workspace.diff
+    description: Get unified diff for a workspace
+    emoji: "📝"
+  - name: workspace.apply_patch
+    description: Apply a unified diff patch with budget and gate enforcement
+    emoji: "🔧"
+  - name: workspace.commit
+    description: Commit staged changes on a topic branch
+    emoji: "💾"
+  - name: workspace.push
+    description: Push the current topic branch to the registered remote
+    emoji: "🚀"
+  - name: workspace.open_pr
+    description: Open a pull request for the current topic branch
+    emoji: "🔀"
